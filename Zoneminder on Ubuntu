@@ -1,0 +1,32 @@
+#!/bin/bash
+echo "Installing the necessary packages..."
+apt-get install apache2 mysql-server-5.1 mysql-client-5.1 php5 libapache2-mod-php5 php5-cli php5-mysql openssh-server openssh-client ffmpeg perl libmime-perl libwww-perl libarchive-tar-perl libdate-manip-perl libarchive-zip-perl
+
+echo "Configuring Perl"
+perl -MCPAN -e shell
+sleep 5
+install CPAN
+exit 
+
+perl -MCPAN -e shell
+sleep 5
+install YAML PHP::Serialization Archive::Zip MIME::Entity LWP::UserAgent X10:ActiveHome Module::Load Sys::Mmap DBI DBD::mysql Date::Manip
+exit
+
+echo "Configuring MySQL"
+mysql -u root -p < /usr/share/zoneminder/db/zm_create.sql
+mysql -u root -p
+grant select,insert,update,delete on zm.* to 'zmuser'@localhost identified by 'zmpass';
+flush privileges;
+quit
+
+chmod 4755 /usr/bin/zmfix
+zmfix -a
+adduser www-data video
+
+echo "Configuring apache2"
+ln -s /etc/zm/apache.conf /etc/apache2/conf.d/zm.conf
+/etc/init.d/apache2 restart
+ln -s /usr/share/zoneminder /var/www/security/zm
+
+apt-get install zoneminder

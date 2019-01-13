@@ -1,0 +1,45 @@
+Objective:
+The purpose of the below script is to automate the installation and setup of ZoneMinder v1.28.1 so that anyone using a Debian-based instance can fully deploy the program with little to no user interaction.
+
+Test platform:
+Raspberry PI 2 running Raspbian
+
+Target Audience:
+People who want to make the world a safer place to live
+
+Bash Code:
+#!/bin/bash
+
+#Confirm sudo or root access before running the script
+if [[ $EUID -ne 0 ]]; then
+   echo "This script must be run as root" 1>&2
+   exit 1
+fi
+
+#Download ZM source to Desktop
+curl ~/Desktop/ZMv1.28.1.tar.gz -o https://github.com/ZoneMinder/ZoneMinder/archive/v1.28.1.tar.gz
+
+#Cleanup any previous ZoneMinder installation attempts
+apt-get -v remove zoneminder ffmpeg ffmpeg-dev libavcodec-dev libavdevice-dev libavfilter-dev libavformat-dev \
+libavutil-dev libpostproc-dev libswscale-dev libjpeg-dev libssl-dev libbz2-dev libpcre3-dev
+
+#Confirm the "cutting-edge" latest repositories have been added
+
+#Confirm ZMv1.28.1 dependencies and build tools are installed
+apt-get install -y apache2 mysql-server php5 php5-mysql build-essential libmysqlclient-dev libssl-dev libbz2-dev libpcre3-dev libdbi-perl libarchive-zip-perl libdate-manip-perl libdevice-serialport-perl libmime-perl libpcre3 libwww-perl libdbd-mysql-perl libsys-mmap-perl yasm automake autoconf libjpeg8-dev libjpeg8 apache2-mpm-prefork libapache2-mod-php5 php5-cli libphp-serialization-perl libgnutls-dev libjpeg8-dev libavcodec-dev libavformat-dev libswscale-dev libavutil-dev libv4l-dev libtool ffmpeg libnetpbm10-dev libavdevice-dev libmime-lite-perl dh-autoreconf dpatch gcc g++ libavcodec-dev libavdevice-dev libavfilter-dev libavformat-dev libavutil-dev libpostproc-dev libswscale-dev libjpeg-dev libssl-dev libbz2-dev libpcre3-dev libavcodec-extra-52 libavformat-extra-52 libswscale-extra-0 libavfilter-extra-1
+
+#Configure ZoneMinder before building from source
+./configure --with-webdir=/var/www/zm --with-cgidir=/usr/lib/cgi-bin \
+ZM_DB_HOST=localhost ZM_DB_NAME=zm ZM_DB_USER=zmuser \
+ZM_DB_PASS=zmpass ZM_SSL_LIB=openssl --enable-debug=no \
+ZM_SSL_LIB=gnutls --with-webgroup=wwwdata --with-webuser=wwwdata --enable-mmap CPPFLAGS="-D__STDC_CONSTANT_MACROS ${CPPFLAGS}"
+
+#Build ZoneMinder
+make
+make install
+
+#Add Apache server to ZM data
+sudo adduser www-data video
+
+#Launch ZoneMinder
+sensible-browser http://localhost/zm
